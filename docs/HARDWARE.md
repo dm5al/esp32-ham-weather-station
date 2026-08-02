@@ -8,6 +8,9 @@ so everything above the BSP is identical — but almost nothing below it is.
 
 7 inch. The reference board this project was developed on.
 
+- **Board:** <https://www.waveshare.com/esp32-s3-touch-lcd-7.htm>
+- **Enclosure:** <https://www.thingiverse.com/thing:7273339>
+
 | | |
 |---|---|
 | Flash | 8 MB |
@@ -33,6 +36,12 @@ touch — it looks like a working device that ignores you.
 ## Sunton ESP32-8048S050C
 
 5 inch.
+
+- **Board and pinout:** <https://www.openhasp.com/0.7.0/hardware/sunton/esp32-8048s0xx/>
+  — covers the whole 8048S0xx family; the S050 is the 5 inch member
+- **Enclosure:** <https://cults3d.com/en/3d-model/various/desk-stand-for-esp32-8048s043-display>
+  — drawn for the **8048S043**, the 4.3 inch board. The PCB outlines differ, so
+  check the fit or rescale before printing
 
 | | |
 |---|---|

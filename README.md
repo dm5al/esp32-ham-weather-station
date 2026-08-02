@@ -73,8 +73,12 @@ Language (6), units (EU/UK/USA), Wi-Fi, station identity, factory reset.
 
 | Board | Size | Notes |
 |---|---|---|
-| Waveshare ESP32-S3-Touch-LCD-7 | 7″ | CH422G expander, backlight on/off |
-| Sunton ESP32-8048S050C | 5″ | No expander, PWM backlight, touch polls (INT unwired) |
+| [Waveshare ESP32-S3-Touch-LCD-7](https://www.waveshare.com/esp32-s3-touch-lcd-7.htm) | 7″ | CH422G expander, backlight on/off |
+| [Sunton ESP32-8048S050C](https://www.openhasp.com/0.7.0/hardware/sunton/esp32-8048s0xx/) | 5″ | No expander, PWM backlight, touch polls (INT unwired) |
+
+Printable desk stands: [Waveshare 7″](https://www.thingiverse.com/thing:7273339)
+· [Sunton](https://cults3d.com/en/3d-model/various/desk-stand-for-esp32-8048s043-display)
+(drawn for the 4.3″ board — check the fit).
 
 Both are 800×480 RGB565 with GT911 capacitive touch and 8 MB octal PSRAM.
 Everything above the BSP is identical; see [`docs/HARDWARE.md`](docs/HARDWARE.md).
