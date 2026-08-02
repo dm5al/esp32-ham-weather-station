@@ -2,7 +2,7 @@
 
 ## Authors
 
-- **Dmitriy Aleksandrov, DM5AL** — <support@dm5al.de>
+- **Dmitriy Aleksandrov, DM5AL** 
 - Developed with **Claude Opus 5** (Anthropic)
 
 ## Data sources
