@@ -2,6 +2,11 @@
 
 Bug reports, hardware ports and photographs of real panels are all welcome.
 
+Photographs especially: the repository has none, because the only images that
+existed were concept renders drawn before the firmware and they no longer match
+what the device does. A square-on shot in even light, no flash, 1600 px or
+better, added to `docs/img/`, would be a genuinely useful contribution.
+
 ## Before opening an issue
 
 Include the serial log. Nearly every problem in this project's history was

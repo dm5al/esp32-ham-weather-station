@@ -11,6 +11,12 @@ DM5AL                    UTC  16:24:31    LOCAL  18:24:31      DX   ⚙
 JO30WP · UNNAU           02.08.2026       02.08.2026        updated: 18:24
 ```
 
+> **Photographs wanted.** There are deliberately no screenshots here yet. The
+> only images that existed were concept renders drawn before the firmware, and
+> showing those as if they were the product would be misleading. If you build
+> one, a square-on photo in even light — no flash, 1600 px or better — is very
+> welcome at <support@dm5al.de> or as a pull request adding to `docs/img/`.
+
 ---
 
 ## The privacy rule
