@@ -10,6 +10,7 @@
 #include "lib/prefs.h"
 #include "net/dxcluster.h"
 #include "ui/ui.h"
+#include "lvgl.h"
 #include "esp_console.h"
 #include "esp_attr.h"
 #include "esp_log.h"
@@ -358,6 +359,66 @@ static int cmd_map(int argc, char **argv)
     return 0;
 }
 
+/*
+ * Dump the frame buffer as a screenshot.
+ *
+ * A photograph of an LCD is never square-on, never colour-accurate and always
+ * shows the backlight; reading the pixels gives exactly what was drawn. The
+ * cost is the link: 800x480 at two bytes is 768 KB, and 115200 baud moves about
+ * 11 KB a second, so raw would take over a minute and any glitch would ruin it.
+ *
+ * So it is run-length encoded. UI screens are mostly flat card and background
+ * colour and collapse by one or two orders of magnitude; the propagation maps
+ * are the worst case and still compress, since sea and land are each one colour
+ * per shade band.
+ *
+ * The wire format is deliberately dull, one hex line per run — colour, then how
+ * many pixels of it — bracketed by markers so the host can find the payload
+ * among the log output that keeps arriving while this runs.
+ */
+static int cmd_shot(int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+
+    if (!bsp_display_lock(2000)) {
+        printf("Could not take the display lock.\n");
+        return 1;
+    }
+    /* Force a full repaint so neither buffer is caught half-drawn. */
+    lv_obj_invalidate(lv_screen_active());
+    lv_refr_now(NULL);
+    const uint16_t *fb = bsp_display_framebuffer();
+    bsp_display_unlock();
+
+    if (!fb) {
+        printf("No frame buffer.\n");
+        return 1;
+    }
+
+    const size_t px = (size_t)BSP_LCD_H_RES * BSP_LCD_V_RES;
+    printf("\n#SHOT %d %d\n", BSP_LCD_H_RES, BSP_LCD_V_RES);
+
+    size_t runs = 0;
+    size_t i = 0;
+    while (i < px) {
+        uint16_t c = fb[i];
+        size_t n = 1;
+        while (i + n < px && fb[i + n] == c && n < 0xFFFE) {
+            n++;
+        }
+        printf("%04X%04X\n", c, (unsigned)n);
+        runs++;
+        i += n;
+        /* The console task must not hold the CPU for the whole transfer. */
+        if ((runs & 0x3F) == 0) {
+            vTaskDelay(1);
+        }
+    }
+    printf("#ENDSHOT %u\n", (unsigned)runs);
+    return 0;
+}
+
 esp_err_t lcd_console_start(void)
 {
     esp_console_repl_t *repl = NULL;
@@ -419,6 +480,14 @@ esp_err_t lcd_console_start(void)
         .func = cmd_map,
     };
     ESP_ERROR_CHECK(esp_console_cmd_register(&map_cmd));
+
+    const esp_console_cmd_t shot_cmd = {
+        .command = "shot",
+        .help = "Dump the framebuffer as RLE hex; see tools/grab_screenshot.py",
+        .hint = NULL,
+        .func = cmd_shot,
+    };
+    ESP_ERROR_CHECK(esp_console_cmd_register(&shot_cmd));
     ESP_ERROR_CHECK(esp_console_register_help_command());
 
     ESP_LOGI(TAG, "console ready — type 'lcd' to see the panel timings");

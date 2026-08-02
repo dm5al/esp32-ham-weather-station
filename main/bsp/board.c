@@ -233,6 +233,24 @@ static esp_err_t init_touch(void)
     return ESP_OK;
 }
 
+const uint16_t *bsp_display_framebuffer(void)
+{
+    if (!s_panel) {
+        return NULL;
+    }
+    /*
+     * With two buffers in direct mode LVGL alternates between them, so the one
+     * being scanned depends on when you ask. Buffer 0 is returned and the
+     * caller is expected to have forced a full redraw first, which paints both
+     * in turn — a screenshot is worth a repaint.
+     */
+    void *fb = NULL;
+    if (esp_lcd_rgb_panel_get_frame_buffer(s_panel, 1, &fb) != ESP_OK) {
+        return NULL;
+    }
+    return (const uint16_t *)fb;
+}
+
 esp_lcd_touch_handle_t bsp_touch_handle(void)
 {
     return s_touch;

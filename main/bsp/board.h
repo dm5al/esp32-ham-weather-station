@@ -57,6 +57,17 @@ void bsp_alignment_grid(bool on);
 esp_lcd_touch_handle_t bsp_touch_handle(void);
 
 /**
+ * @brief The frame buffer the panel is currently scanning out.
+ *
+ * Exposed so a screenshot can be taken of exactly what is on the glass, rather
+ * than photographed off it. RGB565, BSP_LCD_H_RES * BSP_LCD_V_RES pixels.
+ *
+ * Call it with the display lock held and after forcing a redraw, or the buffer
+ * may be caught mid-repaint. Returns NULL before the panel is up.
+ */
+const uint16_t *bsp_display_framebuffer(void);
+
+/**
  * @brief Read raw GT911 registers over the shared I2C bus.
  *
  * Lets the console inspect the controller directly, which separates "the chip

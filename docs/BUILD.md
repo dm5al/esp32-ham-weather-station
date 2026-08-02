@@ -97,3 +97,22 @@ map <band> [proj]    open a band's map and report its repaint time
 
 `station set DM5AL UNNAU JO30WP` is the quickest way to fix an identity typed
 wrongly on the panel.
+
+## Screenshots
+
+`shot` dumps the frame buffer over the console, and `tools/grab_screenshot.py`
+turns that into a PNG:
+
+```bash
+python tools/grab_screenshot.py COM15 docs/img/home.png
+python tools/grab_screenshot.py COM15 docs/img/map20m.png --before "map 6 0"
+```
+
+These are pixel-exact captures of what the panel is displaying, not photographs
+— no glare, no colour shift, no camera angle. 800x480 at two bytes is 768 KB and
+the console runs at 115200 baud, so the pixels are run-length encoded first; UI
+screens are largely flat colour and collapse to a few seconds' transfer, while a
+propagation map is the worst case and still manages it.
+
+`--before` runs a console command and waits for the screen to settle, so one
+invocation can navigate and then capture.
