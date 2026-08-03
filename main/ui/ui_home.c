@@ -125,6 +125,7 @@ static char s_rare_call[48];
 static void rebuild_info(void);
 static int s_alert_shown;
 static lv_timer_t *s_alert_timer;
+static lv_timer_t *s_greyline_timer;
 
 static lv_obj_t *s_alert_bar;
 static lv_obj_t *s_alert_title;
@@ -298,6 +299,49 @@ static void alert_tick(lv_timer_t *t)
     }
 }
 
+/*
+ * Time to the next grey line.
+ *
+ * This lived inside ui_home_set_weather() and was therefore recomputed only
+ * when a forecast arrived — once every fifteen minutes. A countdown that
+ * updates every fifteen minutes does not count down, it jumps, and it was worse
+ * than that: since v1.1 the weather is only pushed to the UI when the fetch
+ * succeeds, so a run of failed fetches froze the number completely while the
+ * clock beside it carried on.
+ *
+ * Nothing here needs the weather. The grey line follows from the station's
+ * position and the current time, both of which are always available.
+ */
+static void update_greyline(void)
+{
+    if (!s_scr || !s_greyline) {
+        return;
+    }
+    const station_t *st = station_get();
+    if (!st->configured) {
+        return;
+    }
+    long secs = solar_seconds_to_greyline(st->pos, time(NULL));
+    if (secs == 0) {
+        lv_label_set_text(s_greyline, T(S_NOW));
+    } else if (secs > 0) {
+        lv_label_set_text_fmt(s_greyline, "%ldh %02ldm", secs / 3600, (secs % 3600) / 60);
+    } else {
+        lv_label_set_text(s_greyline, "--");
+    }
+}
+
+/* Half a minute, so the displayed minute is never more than 30 s behind. The
+ * work is one solar position and a label — far cheaper than the second-by-second
+ * clock already running in the header. */
+#define GREYLINE_TICK_MS 30000
+
+static void greyline_tick(lv_timer_t *t)
+{
+    (void)t;
+    update_greyline();
+}
+
 static void build_alerts(void)
 {
     const theme_t *t = theme();
@@ -326,6 +370,9 @@ static void build_alerts(void)
 
     if (!s_alert_timer) {
         s_alert_timer = lv_timer_create(alert_tick, ALERT_ROTATE_MS, NULL);
+    }
+    if (!s_greyline_timer) {
+        s_greyline_timer = lv_timer_create(greyline_tick, GREYLINE_TICK_MS, NULL);
     }
     paint_alert();
 }
@@ -640,15 +687,5 @@ void ui_home_set_weather(const weather_data_t *wx)
         set_clock_from_iso(s_sun_set, wx->days[0].sunset);
     }
 
-    const station_t *st = station_get();
-    if (st->configured) {
-        long secs = solar_seconds_to_greyline(st->pos, time(NULL));
-        if (secs == 0) {
-            lv_label_set_text(s_greyline, T(S_NOW));
-        } else if (secs > 0) {
-            lv_label_set_text_fmt(s_greyline, "%ldh %02ldm", secs / 3600, (secs % 3600) / 60);
-        } else {
-            lv_label_set_text(s_greyline, "--");
-        }
-    }
+    update_greyline();
 }

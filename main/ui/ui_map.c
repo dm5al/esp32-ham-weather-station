@@ -101,6 +101,49 @@ typedef struct {
 static proj_t s_proj;
 
 static void paint_projection_buttons(void);
+static void redraw(void);
+
+/*
+ * The terminator moves, and until now the map did not.
+ *
+ * redraw() was reached from exactly three places: a projection button, a band
+ * change, and new spot data arriving. Nothing on a clock. Leave the grey line
+ * open and it stays frozen wherever the sun was when the page was opened —
+ * fifteen minutes if a fetch happens to land, hours if none does. On a display
+ * whose whole point is showing where the terminator is right now, that is the
+ * one thing it must not do.
+ *
+ * The sun crosses 0.25 degrees of longitude per minute. Across a 572 px map
+ * that is 0.4 px, so a minute between repaints keeps the line under half a pixel
+ * from true — far better than the eye can resolve, and the cost is the 33-84 ms
+ * an equirectangular repaint measures at.
+ *
+ * The azimuthal view is on a longer leash deliberately. It has no terminator to
+ * speak of — the day/night shading on the disc is context rather than the
+ * feature — and its repaint costs 229 ms, which is a visible hitch in the touch
+ * response. Once every five minutes is imperceptible on the shading and stays
+ * out of the way.
+ */
+#define TICK_GREYLINE_MS   60000
+#define TICK_AZIMUTHAL_MS 300000
+
+static lv_timer_t *s_tick;
+
+static uint32_t tick_period(void)
+{
+    return s_proj.azimuthal ? TICK_AZIMUTHAL_MS : TICK_GREYLINE_MS;
+}
+
+static void sun_tick(lv_timer_t *t)
+{
+    (void)t;
+    /* The screen is destroyed on leaving the page and the timer with it, so
+     * reaching here means the map exists — but the canvas is checked anyway
+     * because redraw() writes straight into its buffer. */
+    if (s_scr && s_canvas) {
+        redraw();
+    }
+}
 
 /*
  * All coordinates are CANVAS-LOCAL: 0..MAP_W by 0..MAP_H. The canvas is placed
@@ -132,15 +175,43 @@ static void project(geo_point_t p, float *x, float *y)
  * LVGL has no concave polygon fill, so the previous approach fan-triangulated
  * each coastline ring and visibly distorted anything not roughly convex.
  *
- * Day and night are computed per pixel too, so twilight is a smooth gradient
- * rather than stepped bands.
+ * Day and night are computed per pixel too, so the terminator is a true curve
+ * at pixel resolution rather than a polygon approximating one.
  */
 
-#define SHADE_LEVELS 16
+/*
+ * Two levels: lit, or not. No gradient.
+ *
+ * This used to be a sixteen-step ramp reaching full night at astronomical
+ * twilight, eighteen degrees below the horizon, on the reasoning that a smooth
+ * terminator is more truthful than a hard edge. It was truthful and it was
+ * useless. Eighteen degrees of elevation is a band some two thousand kilometres
+ * wide, so the boundary had no position you could point at — and because the
+ * darkest step only mixed 150 of 255 toward the night colour, the night side was
+ * never properly dark either.
+ *
+ * What that produced: a station eight degrees below the horizon — well past
+ * sunset, sky fully dark — rendered at 44 % of the ramp and 26 % of the mix,
+ * which is a barely perceptible grey. The operator sees a map putting them in
+ * twilight while they are standing in the dark.
+ *
+ * Every other grey line map draws one edge, at the geometric terminator, and so
+ * does this one now. The edge is where the sun's elevation crosses zero: on one
+ * side the sun is up, on the other it is down, and that is the whole question a
+ * grey line map exists to answer.
+ */
+#define SHADE_LEVELS 2
 
-/* Full night is reached at astronomical twilight, 18 degrees below the horizon. */
-#define NIGHT_FLOOR_SIN 0.309017f
-#define NIGHT_MAX_MIX   150            /* 0-255, toward the night colour */
+/*
+ * Toward the night colour on the dark side.
+ *
+ * The balance is between the edge being unmistakable and the world still being
+ * legible underneath it. 210 read as night at a glance but swallowed the
+ * coastlines with it, which loses the thing that makes the map useful: seeing
+ * *which* land is in darkness. Land and sea both converge on the night colour as
+ * this rises, so contrast between them is what is being spent.
+ */
+#define NIGHT_MAX_MIX   165
 
 static uint16_t s_land_lut[SHADE_LEVELS];
 static uint16_t s_sea_lut[SHADE_LEVELS];
@@ -276,17 +347,10 @@ static inline bool land_at_rc(int row, int col)
     return (LANDMASK[row * (LANDMASK_W / 8) + (col >> 3)] >> (7 - (col & 7))) & 1;
 }
 
-/** @brief Shade index: 0 is full day, SHADE_LEVELS-1 is full night. */
+/** @brief Shade index: 0 where the sun is up, 1 where it is down. */
 static inline int shade_index(float sin_elev)
 {
-    if (sin_elev >= 0.0f) {
-        return 0;
-    }
-    float d = -sin_elev / NIGHT_FLOOR_SIN;
-    if (d > 1.0f) {
-        d = 1.0f;
-    }
-    return (int)(d * (SHADE_LEVELS - 1) + 0.5f);
+    return sin_elev >= 0.0f ? 0 : 1;
 }
 
 /**
@@ -613,6 +677,11 @@ static void on_pick_projection(lv_event_t *e)
     prefs_set_projection((map_projection_t)(intptr_t)lv_event_get_user_data(e));
     paint_projection_buttons();
     redraw();
+    /* The two projections repaint at different costs, so the tick that keeps the
+     * sun current changes pace with them. */
+    if (s_tick) {
+        lv_timer_set_period(s_tick, tick_period());
+    }
 }
 
 /**
@@ -665,6 +734,10 @@ static void draw_greyline_icon(lv_obj_t *parent, int cx, int cy)
 static void on_screen_deleted(lv_event_t *e)
 {
     (void)e;
+    if (s_tick) {
+        lv_timer_del(s_tick);
+        s_tick = NULL;
+    }
     if (s_draw_buf) {
         lv_draw_buf_destroy(s_draw_buf);
         s_draw_buf = NULL;
@@ -753,6 +826,10 @@ lv_obj_t *ui_map_create(void)
         }
     }
     paint_projection_buttons();
+
+    /* Keeps the sun where it actually is for as long as the page is open. Torn
+     * down with the screen in on_screen_deleted(). */
+    s_tick = lv_timer_create(sun_tick, tick_period(), NULL);
 
     ui_map_set_spots(NULL, s_spot_count, &s_muf_data);
     return s_scr;

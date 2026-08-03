@@ -40,7 +40,7 @@
 static const char *TAG = "ui.settings";
 
 /* Bumped by hand; there is no build system version to inherit from. */
-#define APP_VERSION "1.1"
+#define APP_VERSION "1.2"
 
 static lv_obj_t *s_scr;
 static lv_obj_t *s_call;

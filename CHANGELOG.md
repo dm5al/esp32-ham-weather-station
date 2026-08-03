@@ -1,5 +1,38 @@
 # Changelog
 
+## v1.2.0 — 2026-08-03
+
+The grey line, which turned out to be wrong in three separate ways.
+
+### Fixed
+- **The terminator is a hard edge now, not a gradient.** It was a sixteen-step
+  ramp reaching full night at astronomical twilight — eighteen degrees below the
+  horizon, a band roughly two thousand kilometres wide — and the darkest step
+  only mixed 150 of 255 toward the night colour. A station eight degrees below
+  the horizon, sky fully dark, therefore rendered at 44 % of the ramp and 26 % of
+  the mix: a barely perceptible grey. The map put the operator in twilight while
+  they stood in the dark. There is now one edge, at the geometric terminator
+  where solar elevation crosses zero, which is the question a grey line map
+  exists to answer and what every other such map draws. The night side is
+  shaded 165 of 255 toward the night colour — dark enough that the edge is
+  unmistakable, light enough that the coastlines under it stay readable, which
+  is what makes it possible to see *which* land is in darkness.
+- **The map is redrawn on a timer.** `redraw()` was reachable from exactly three
+  places — the projection button, a band change, and new spot data — and nothing
+  on a clock, so an open grey line stayed frozen wherever the sun was when the
+  page was opened. The sun crosses 0.25° of longitude per minute, which is 0.4 px
+  on this map, so the grey line repaints every 60 s and stays under half a pixel
+  from true. The azimuthal view repaints every 5 minutes instead: it has no
+  terminator to speak of and its repaint costs 229 ms, which is a visible hitch.
+- **The home screen's time-to-grey-line counted in fifteen-minute jumps.** It was
+  computed only inside `ui_home_set_weather()`, so it advanced when a forecast
+  arrived rather than when time passed — and since v1.1 only pushes weather to
+  the UI on a successful fetch, a run of failures froze it entirely while the
+  clock beside it kept running. Nothing in that figure needs the weather; it
+  follows from position and time. Now on its own 30 s tick.
+
+---
+
 ## v1.1.0 — 2026-08-03
 
 Three fixes found in use, plus a documentation change.
