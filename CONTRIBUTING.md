@@ -2,10 +2,10 @@
 
 Bug reports, hardware ports and photographs of real panels are all welcome.
 
-Photographs especially: the repository has none, because the only images that
-existed were concept renders drawn before the firmware and they no longer match
-what the device does. A square-on shot in even light, no flash, 1600 px or
-better, added to `docs/img/`, would be a genuinely useful contribution.
+Photographs especially. `docs/img/` now has shots of both supported boards, but
+only in one builder's cases and on one desk — a different enclosure, or a panel
+sourced elsewhere, tells readers something these cannot. A square-on shot in even
+light, no flash, 1600 px or better, is a genuinely useful contribution.
 
 ## Before opening an issue
 

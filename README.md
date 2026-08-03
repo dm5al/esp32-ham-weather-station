@@ -11,14 +11,18 @@ DM5AL                    UTC  16:24:31    LOCAL  18:24:31      DX   ⚙
 JO30WP · UNNAU           02.08.2026       02.08.2026        updated: 18:24
 ```
 
-Screenshots are in [`docs/img/`](docs/img/). They are frame-buffer captures read
-off a running device over the serial console rather than photographs, so they are
-pixel-exact — no glare, no colour shift, no camera angle. Earlier concept renders
-were deleted rather than kept with a disclaimer: an image that shows something
-the firmware does not do is worse than no image.
+![Both supported boards running the firmware](docs/img/photo-both-boards.jpg)
 
-**Photographs of real panels are still wanted** — a square-on shot in even light,
-no flash, 1600 px or better, as a pull request adding to `docs/img/`.
+*Sunton 5″ and Waveshare 7″, same firmware, same source tree — built by DM5AL in
+printed cases.*
+
+More in [`docs/img/`](docs/img/): both home screens, the azimuthal and grey-line
+maps, and the DX cluster. Alongside the photographs are frame-buffer captures
+read off a running device over the serial console, which are pixel-exact — no
+glare, no colour shift, no camera angle — and useful for reading the fine print.
+
+Earlier concept renders were deleted rather than kept with a disclaimer: an image
+showing something the firmware does not do is worse than no image.
 
 ---
 
