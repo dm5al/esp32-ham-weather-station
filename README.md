@@ -11,11 +11,14 @@ DM5AL                    UTC  16:24:31    LOCAL  18:24:31      DX   ⚙
 JO30WP · UNNAU           02.08.2026       02.08.2026        updated: 18:24
 ```
 
-> **Photographs wanted.** There are deliberately no screenshots here yet. The
-> only images that existed were concept renders drawn before the firmware, and
-> showing those as if they were the product would be misleading. If you build
-> one, a square-on photo in even light — no flash, 1600 px or better — is very
-> welcome at <support@dm5al.de> or as a pull request adding to `docs/img/`.
+Screenshots are in [`docs/img/`](docs/img/). They are frame-buffer captures read
+off a running device over the serial console rather than photographs, so they are
+pixel-exact — no glare, no colour shift, no camera angle. Earlier concept renders
+were deleted rather than kept with a disclaimer: an image that shows something
+the firmware does not do is worse than no image.
+
+**Photographs of real panels are still wanted** — a square-on shot in even light,
+no flash, 1600 px or better, as a pull request adding to `docs/img/`.
 
 ---
 
@@ -131,16 +134,29 @@ device keeps working when any one source disappears.
 **PolyForm Noncommercial 1.0.0** — see [LICENSE](LICENSE).
 
 Free for any noncommercial use: personal, hobby, club, educational, public
-research. Commercial use is not permitted. Attribution to the authors must be
-retained in any redistribution.
+research. Selling it, in any form, is not permitted. Attribution to the authors
+must be retained in any redistribution, and in firmware builds that credit is on
+the device's About screen.
 
-Note that this makes the project *source-available*, not open source in the
-formal sense — the OSI and FSF definitions both forbid restricting commercial
-use. The LICENSE file explains the reasoning.
+This makes the project *source-available*, not open source in the formal sense —
+the OSI and FSF definitions both forbid restricting the field of endeavour,
+commercial use included.
+
+That is a deliberate choice rather than an oversight, and GPL-3.0 was considered
+and rejected on a specific ground: copyleft stops a derivative being made
+*proprietary*, but not being *sold*. A manufacturer may build a device like this
+by the thousand and comply with the GPL simply by publishing the source.
+
+Every figure this device shows comes from a service that is free, anonymous and
+largely volunteer-run — NOAA SWPC, wspr.live, prop.kc2g.com, Open-Meteo, HamQTH,
+DXWatch, AD1C's `cty.csv`. A single hobbyist station costs them nothing worth
+counting. A production run would, and it would be their bandwidth underwriting
+someone else's margin. The restriction exists to prevent that, not to protect
+revenue — there is none, and none is intended.
 
 ## Authors
 
-- **Dmitriy Aleksandrov, DM5AL**
+- **Dmitriy Aleksandrov, DM5AL** — reachable via GitHub issues
 - Developed with **Claude Opus 5** (Anthropic)
 
 No warranty. See the LICENSE for the full disclaimer.

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE.
 """Generate the DXCC entity table from AD1C's cty.csv.
 
 HamQTH publishes an ADIF DXCC entity code, a country name and a continent with

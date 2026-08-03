@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE.
 """Pull a screenshot off the device over the serial console.
 
 Reads the frame buffer rather than photographing the panel, so the result is
@@ -48,8 +50,29 @@ def wait_for_prompt(port, tries=25):
     return False
 
 
+def open_quietly(port_name):
+    """Open without resetting the board.
+
+    DTR and RTS are wired to EN and BOOT on these panels, so opening the port
+    the ordinary way pulses them and reboots the device — which is fatal here:
+    every screenshot then catches a machine fifteen seconds into a cold start,
+    with no clock and no data yet. Setting both lines false before open avoids
+    the pulse.
+    """
+    port = serial.Serial()
+    port.port = port_name
+    port.baudrate = 115200
+    port.timeout = 0.2
+    port.dtr = False
+    port.rts = False
+    port.open()
+    port.dtr = False
+    port.rts = False
+    return port
+
+
 def capture(port_name, out_path, before=None, settle=3.0, timeout=180.0):
-    port = serial.Serial(port_name, 115200, timeout=0.2)
+    port = open_quietly(port_name)
 
     # Wait for a live prompt rather than assuming one. The console scrolls away
     # under log output, and a command sent into the boot sequence is swallowed.

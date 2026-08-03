@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE. */
 /*
  * Screen manager and the boundary between the UI and the application task.
  *
@@ -67,6 +69,9 @@ void ui_show_map(int band_index);
 void ui_show_dx(void);
 void ui_show_settings(void);
 void ui_show_setup(void);
+
+/** @brief Raise the About sheet over Settings, for the serial console. */
+void ui_settings_open_about(void);
 
 /** @brief Open commissioning directly on the network or the station step. */
 void ui_show_wifi_setup(void);

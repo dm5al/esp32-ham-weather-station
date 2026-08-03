@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE. */
 /*
  * Interface language.
  *
@@ -50,7 +52,9 @@ typedef enum {
     /* settings */
     S_SETTINGS, S_STATION, S_EDIT, S_NIGHT_MODE, S_OFF, S_AUTO, S_ON,
     S_CHOOSE_NETWORK, S_OFFLINE, S_LANGUAGE, S_UNITS, S_PRIVACY, S_AUTO_SWITCH,
-    S_NOT_SET, S_TAP_EDIT,
+    S_NOT_SET, S_TAP_EDIT, S_AUTHOR, S_LICENCE, S_SOURCES, S_MEASURING,
+    S_CONTACT, S_FIRMWARE_VER, S_COMPONENTS, S_SERVICES_USED, S_PRIVACY_WEATHER,
+    S_PRIVACY_TITLE,
 
     /* commissioning */
     S_STEP_FORMAT, S_STEP_STATION, S_CHOOSE_WIFI, S_RESCAN, S_SCANNING,

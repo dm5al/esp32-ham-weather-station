@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE.
 WSPR_20M = [
     ("JN61",-13), ("JN47",-17), ("JN87",-14), ("IO86",-16), ("KP03",-10), ("IO85",-15), ("IL38",-16), ("JO31",-15),
     ("KP11",-9), ("IO90",-14), ("JO21",-18), ("JN49",-13), ("JN77",-14), ("KO85",-16), ("JN58",-19), ("KO07",-13),

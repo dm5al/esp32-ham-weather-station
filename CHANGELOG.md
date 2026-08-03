@@ -1,5 +1,76 @@
 # Changelog
 
+## v1.1.0 — 2026-08-03
+
+Three fixes found in use, plus a documentation change.
+
+### Fixed
+- **Settings → Station → Edit showed only the first letter of each field.**
+  With `accepted_chars` set, LVGL does not assign a text area's contents in one
+  go — it replays the string character by character, each raising a change
+  event. The duplicate-keypress guard added in v1.0 saw a whole prefill arrive
+  in one millisecond and deleted all but the first character. Machine-written
+  text is now exempt from the guard.
+- **DX cluster mode column showed `E`, or nothing at all.** HamQTH publishes a
+  bare `E` for some spots, which was passed straight through. A published mode
+  is now only used when it names a mode that exists; otherwise the mode is
+  inferred from the frequency using an IARU band-plan table, so CW, digital and
+  SSB segments are labelled instead of left blank.
+- **Network password sheet had Cancel sitting on top of the input field.** The
+  text area spanned the full width behind both buttons; it now ends where the
+  buttons begin.
+- **Sunton: the picture jumped out of alignment when a button was pressed.** The
+  5″ board ran its panel at 24 MHz, drawing 48 MB/s out of PSRAM. A repaint
+  blitting into the frame buffer left the bounce buffers no margin, they ran dry
+  mid-frame and the RGB DMA lost sync — permanently, since nothing restores it
+  before a restart. That is why it appeared to come and go: every reboot cleared
+  it. The board now runs at 21 MHz, the same 42 MB/s the Waveshare has always
+  used without trouble, at a cost of 53 → 46 Hz refresh.
+
+### Changed
+- **Licence stays PolyForm Noncommercial 1.0.0**, and the LICENSE now records
+  why GPL-3.0 was considered and rejected. Copyleft prevents a derivative being
+  made *proprietary*; it does not prevent one being *sold*. A manufacturer could
+  build this by the thousand and comply simply by publishing the source. Every
+  figure the device shows comes from a free, anonymous, largely volunteer-run
+  service — one hobby station costs them nothing, a production run would, and it
+  would be their bandwidth underwriting someone else's margin. The restriction
+  is not about revenue; there is none.
+- Every source file now carries an `SPDX-License-Identifier` line.
+- **New About sheet**, reached from Settings, listing the author, contact
+  address, licence, privacy statement, firmware version and a full component
+  bill of materials with versions. A support address appears on that screen and
+  nowhere else in the project: the licence and documentation are public and get
+  scraped, a panel in a shack does not.
+- The component versions are read from each dependency's own header at compile
+  time, so the list cannot drift from what was linked. A hand-copied bill of
+  materials is worse than none — it is wrong silently, and it is trusted. A
+  noncommercial project is outside the scope of the EU Cyber Resilience Act, but
+  the argument for publishing an SBOM does not depend on being compelled to: when
+  the next Mbed TLS advisory lands, the only question is which version is on the
+  device.
+- **Settings page rearranged.** About and Factory reset moved into their own card
+  under Units and formats. On the footer line they overlapped the text beside
+  them and cut off the last line of the privacy statement.
+- **The privacy claim was narrowed because it was overstated.** "No private data
+  is shared" was not quite true: the propagation queries send only the
+  two-character grid field, but the weather forecast sends the position derived
+  from the full locator, placing the station within about 2.5 km. The device now
+  says what is unconditionally true — no callsign and no account reach any
+  service — and the About sheet states the location question in full.
+- Author's email address removed from the licence and documentation. Contact
+  there is via GitHub issues.
+
+### Fixed
+- **Map kept the previous band's spots after tapping a new band.** The title was
+  relabelled and nothing else, so for the length of the fetch the map showed one
+  band's receptions under another band's name. It now clears the spots and MUF
+  immediately and shows "measuring..." until real data arrives.
+- "All quiet" on the info panel is now "No new events", in all six languages.
+- Russian: `ионосонда` corrected to `ионосферный зонд`.
+
+---
+
 ## v1.0.0 — 2026-08-02
 
 First release. Runs on two boards from one source tree.

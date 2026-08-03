@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE. */
 /*
  * Settings.
  *
@@ -19,6 +21,14 @@
 #include "freertos/task.h"
 #include "nvs_flash.h"
 
+/* Pulled in for their version macros alone, so the About screen reports what was
+ * actually linked rather than what someone remembered to write down. */
+#include "cJSON.h"
+#include "esp_idf_version.h"
+#include "mbedtls/build_info.h"
+
+#include "bsp/board_pins.h"
+
 #include "lib/i18n.h"
 #include "lib/prefs.h"
 #include "lib/station.h"
@@ -30,7 +40,7 @@
 static const char *TAG = "ui.settings";
 
 /* Bumped by hand; there is no build system version to inherit from. */
-#define APP_VERSION "1.0"
+#define APP_VERSION "1.1"
 
 static lv_obj_t *s_scr;
 static lv_obj_t *s_call;
@@ -110,6 +120,158 @@ static void on_factory_reset(lv_event_t *e)
     lv_obj_set_style_bg_color(yes, theme()->poor, 0);
 }
 
+/*
+ * About.
+ *
+ * Three jobs, and only the first is courtesy. The licence requires the author
+ * credit to survive redistribution, so it has to be reachable from the interface
+ * — a LICENSE file is no use on a panel with no keyboard and no file manager.
+ * The contact address is here so an operator holding a misbehaving device can
+ * find it without the repository.
+ *
+ * The third job is the component list, and it is the one worth explaining. The
+ * EU Cyber Resilience Act obliges manufacturers of products with digital
+ * elements to publish a bill of materials; a noncommercial hobby project is out
+ * of scope and owes nobody this. It is here anyway, because the argument for an
+ * SBOM does not actually depend on who is compelled to produce one: when the
+ * next mbedTLS advisory lands, the only question that matters is which version
+ * is on the device, and the person holding it should not have to rebuild the
+ * firmware to find out.
+ *
+ * Every version below one comes from the compiler, read out of the dependency's
+ * own header, so it cannot drift from what was actually linked. A hand-copied
+ * SBOM is worse than none: it is wrong silently, and it is trusted.
+ *
+ * The contact address appears here and nowhere else. It is deliberately absent
+ * from the licence and the documentation: those are public and get scraped,
+ * whereas this is on a panel in someone's shack.
+ */
+static void close_sheet(lv_event_t *e)
+{
+    lv_obj_del((lv_obj_t *)lv_event_get_user_data(e));
+}
+
+/* One row of the component list: name left, version right-aligned against the
+ * column edge so the numbers line up and can be scanned down. */
+static void component_row(lv_obj_t *parent, int x, int y, int w, const char *name,
+                          const char *version)
+{
+    const theme_t *t = theme();
+    ui_label(parent, &lv_font_ui_14, t->muted, x, y, name);
+    lv_obj_t *v = ui_label(parent, &lv_font_ui_14, t->text, x, y, version);
+    lv_obj_set_width(v, w);
+    lv_obj_set_style_text_align(v, LV_TEXT_ALIGN_RIGHT, 0);
+}
+
+static void on_about(lv_event_t *e)
+{
+    (void)e;
+    const theme_t *t = theme();
+
+    /* Modal by construction: a full-screen catcher takes every press that is
+     * not on the card, so the settings underneath cannot be operated blind. */
+    lv_obj_t *shade = ui_box(s_scr, 800, 480, 0, 0, t->bg, 0);
+    lv_obj_set_style_bg_opa(shade, LV_OPA_70, 0);
+    lv_obj_add_flag(shade, LV_OBJ_FLAG_CLICKABLE);
+
+    ui_card(shade, 40, 30, 720, 420);
+
+    ui_label(shade, &lv_font_ui_24, t->text, 64, 48, "Ham Weather Station");
+
+    /* ---- left column: who, how to reach them, on what terms ---- */
+    ui_label(shade, &lv_font_ui_12, t->muted, 64, 90, T(S_AUTHOR));
+    ui_label(shade, &lv_font_ui_18, t->text, 64, 108, "DM5AL");
+    ui_label(shade, &lv_font_ui_14, t->muted, 64, 134,
+             "with tremendous help from Claude Opus 5");
+
+    ui_label(shade, &lv_font_ui_12, t->muted, 64, 170, T(S_CONTACT));
+    ui_label(shade, &lv_font_ui_16, t->accent, 64, 188, "support@dm5al.de");
+
+    ui_label(shade, &lv_font_ui_12, t->muted, 64, 224, T(S_LICENCE));
+    ui_label(shade, &lv_font_ui_14, t->text, 64, 242, "PolyForm Noncommercial 1.0.0");
+    /*
+     * "Source available", not "open source", and the distinction is not
+     * pedantry: the OSI and FSF definitions both forbid restricting the field of
+     * endeavour, so no licence can forbid selling and be open source. Claiming
+     * otherwise on the device would be a claim the LICENSE file contradicts.
+     */
+    ui_label(shade, &lv_font_ui_12, t->muted, 64, 264,
+             "Source available. Free for personal, club, educational");
+    ui_label(shade, &lv_font_ui_12, t->muted, 64, 280,
+             "and research use. Selling it, in any form, is not");
+    ui_label(shade, &lv_font_ui_12, t->muted, 64, 296,
+             "permitted. This credit must be preserved.");
+    ui_label(shade, &lv_font_ui_12, t->muted, 64, 316, "No warranty of any kind.");
+
+    /* The services themselves are listed on the Settings page behind this sheet;
+     * repeating them here would cost the room this statement needs. */
+    ui_label(shade, &lv_font_ui_12, t->muted, 64, 342, T(S_PRIVACY_TITLE));
+    lv_obj_t *priv = ui_label(shade, &lv_font_ui_12, t->good, 64, 360,
+                              T(S_PRIVACY_WEATHER));
+    lv_obj_set_width(priv, 340);
+    lv_label_set_long_mode(priv, LV_LABEL_LONG_WRAP);
+
+    /* ---- right column: firmware and its bill of materials ---- */
+    const int cx = 430;
+    const int cw = 300;
+
+    ui_label(shade, &lv_font_ui_12, t->muted, cx, 90, T(S_FIRMWARE_VER));
+    ui_label(shade, &lv_font_ui_18, t->text, cx, 108, "v" APP_VERSION);
+    ui_label(shade, &lv_font_ui_14, t->muted, cx, 134, BOARD_NAME);
+
+    ui_label(shade, &lv_font_ui_12, t->muted, cx, 170, T(S_COMPONENTS));
+
+    char buf[32];
+    int y = 190;
+
+    component_row(shade, cx, y, cw, "ESP-IDF", IDF_VER);
+    y += 20;
+    /* Ships as "V10.5.1"; the leading V would read as part of the number. */
+    component_row(shade, cx, y, cw, "FreeRTOS", tskKERNEL_VERSION_NUMBER + 1);
+    y += 20;
+
+    snprintf(buf, sizeof(buf), "%d.%d.%d", LVGL_VERSION_MAJOR, LVGL_VERSION_MINOR,
+             LVGL_VERSION_PATCH);
+    component_row(shade, cx, y, cw, "LVGL", buf);
+    y += 20;
+
+    component_row(shade, cx, y, cw, "Mbed TLS", MBEDTLS_VERSION_STRING);
+    y += 20;
+
+    snprintf(buf, sizeof(buf), "%d.%d.%d", CJSON_VERSION_MAJOR, CJSON_VERSION_MINOR,
+             CJSON_VERSION_PATCH);
+    component_row(shade, cx, y, cw, "cJSON", buf);
+    y += 20;
+
+    /*
+     * These two publish no version macro, so unlike everything above they are
+     * transcribed from dependencies.lock and can go stale. Kept because omitting
+     * a component from a bill of materials is the worse failure; the version
+     * requirement is pinned in main/idf_component.yml.
+     */
+    component_row(shade, cx, y, cw, "esp_lvgl_port", "2.6.3");
+    y += 20;
+    component_row(shade, cx, y, cw, "esp_lcd_touch_gt911", "1.1.3");
+    y += 20;
+
+    ui_label(shade, &lv_font_ui_12, t->muted, cx, y + 10, "Montserrat  ·  SIL OFL 1.1");
+
+    /* NULL here on purpose: ui_button() would register the handler with no user
+     * data, and the sheet to delete is passed as user data below. */
+    lv_obj_t *close = ui_button(shade, 590, 392, 140, 40, NULL);
+    lv_obj_set_style_bg_color(close, t->accent, 0);
+    lv_obj_add_event_cb(close, close_sheet, LV_EVENT_CLICKED, shade);
+    lv_obj_t *cl = ui_label(close, &lv_font_ui_16, t->bg, 0, 0, T(S_OK));
+    lv_obj_center(cl);
+}
+
+void ui_settings_open_about(void)
+{
+    if (s_scr) {
+        on_about(NULL);
+    }
+}
+
 static void on_edit_station(lv_event_t *e)
 {
     (void)e;
@@ -186,6 +348,24 @@ lv_obj_t *ui_settings_create(void)
                                &s_unit_lbl[i]);
     }
 
+    /* ---- about and factory reset ----
+     *
+     * Their own card under Units, in the left column, rather than floating on
+     * the footer line. Sharing that line with the privacy text meant the two
+     * fought for the same pixels: the services list ran underneath the buttons
+     * and the last line of the statement was cut off by the bottom edge. A
+     * button and a paragraph should not be asked to occupy one row. */
+    ui_card(s_scr, 12, 324, 380, 72);
+    lv_obj_t *about = ui_button(s_scr, 28, 340, 168, 40, on_about);
+    lv_obj_set_style_bg_color(about, t->card_hi, 0);
+    lv_obj_t *al = ui_label(about, &lv_font_ui_14, t->text, 0, 0, T(S_ABOUT));
+    lv_obj_center(al);
+
+    lv_obj_t *reset = ui_button(s_scr, 208, 340, 168, 40, on_factory_reset);
+    lv_obj_set_style_bg_color(reset, t->card_hi, 0);
+    lv_obj_t *rl = ui_label(reset, &lv_font_ui_14, t->poor, 0, 0, T(S_FACTORY_RESET));
+    lv_obj_center(rl);
+
     /* ---- wifi ---- */
     /* Under the language card and the same width. Name on the left, signal on
      * the right of the same line — the two belong together and neither needs a
@@ -208,19 +388,17 @@ lv_obj_t *ui_settings_create(void)
     lv_obj_t *wl = ui_label(wifi, &lv_font_ui_16, t->bg, 0, 0, T(S_CHANGE));
     lv_obj_center(wl);
 
-    /* ---- about and factory reset ---- */
-    ui_label(s_scr, &lv_font_ui_12, t->muted, 20, 406,
+    /* ---- footer ----
+     *
+     * Three lines with the whole width to themselves now that the buttons have
+     * moved up, and the order is the argument: here is everyone the device talks
+     * to, and here is what it does not tell them. The full statement — including
+     * the coordinates the weather forecast needs — is on the About sheet, where
+     * there is room to state it properly rather than truncate it. */
+    ui_label(s_scr, &lv_font_ui_12, t->muted, 20, 412, T(S_SERVICES_USED));
+    ui_label(s_scr, &lv_font_ui_12, t->text, 20, 430,
              "NOAA SWPC  ·  wspr.live  ·  prop.kc2g.com  ·  Open-Meteo  ·  HamQTH  ·  DXWatch");
-    ui_label(s_scr, &lv_font_ui_12, t->good, 20, 424, T(S_PRIVACY));
-    ui_label(s_scr, &lv_font_ui_12, t->muted, 20, 442,
-             "v" APP_VERSION "  ·  Opus 5, DM5AL  ·  support@dm5al.de");
-    ui_label(s_scr, &lv_font_ui_12, t->muted, 20, 460,
-             "Open source. Commercial distribution not permitted.");
-
-    lv_obj_t *reset = ui_button(s_scr, 620, 434, 168, 38, on_factory_reset);
-    lv_obj_set_style_bg_color(reset, t->card_hi, 0);
-    lv_obj_t *rl = ui_label(reset, &lv_font_ui_14, t->poor, 0, 0, T(S_FACTORY_RESET));
-    lv_obj_center(rl);
+    ui_label(s_scr, &lv_font_ui_12, t->good, 20, 452, T(S_PRIVACY));
 
     ui_settings_refresh();
     return s_scr;

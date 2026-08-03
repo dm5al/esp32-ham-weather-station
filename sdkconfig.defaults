@@ -22,9 +22,24 @@ CONFIG_SPIRAM_USE_MALLOC=y
 # buffer from at ~42 MB/s, and starving that DMA is what causes a permanently
 # shifted image. Code runs from the flash cache instead.
 #
-# This costs nothing on the display side: the RGB DMA reads PSRAM directly and
-# does not go through the cache, so scan-out continues normally even while a
-# flash write (an NVS credential save) has the cache disabled.
+# One correction to the note above, because it was wrong in a way worth keeping
+# on record: it claimed scan-out is safe during a flash write since the RGB DMA
+# reads PSRAM directly and never touches the cache. True of the DMA, but we run
+# in bounce-buffer mode, where the DMA reads internal SRAM and the *CPU* refills
+# those buffers from an interrupt handler living in flash. So a flash write is
+# not free for the display after all.
+#
+# That was the leading theory for the DMA resync seen on the Sunton, and moving
+# instructions and rodata into PSRAM was tried as the cure. It was the wrong
+# diagnosis. The trigger was the pixel clock: 24 MHz drew 48 MB/s out of PSRAM
+# and left the bounce buffers no margin against a repaint blitting into the
+# frame buffer. Dropping the Sunton to 21 MHz — the 42 MB/s the Waveshare has
+# always run at — fixed it, and the resync has not returned.
+#
+# So these stay off. Turning them on would have added instruction fetch to the
+# very bus that was already the constraint. Kept as a comment rather than a
+# commit because the mechanism above is real and will matter if a future change
+# makes flash writes frequent enough to outrun the bounce buffers on their own.
 CONFIG_SPIRAM_FETCH_INSTRUCTIONS=n
 CONFIG_SPIRAM_RODATA=n
 # Keep small allocations in internal RAM so DMA-capable memory stays available.

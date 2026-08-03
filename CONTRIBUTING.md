@@ -65,6 +65,13 @@ symmetric, so it looked plausible.
 committed. Do not hand-edit them; re-run the scripts in `tools/` and commit the
 result. See [docs/BUILD.md](docs/BUILD.md).
 
+These files carry no SPDX header and no copyright line, deliberately. Their
+content is not this project's to license: the glyph data is Montserrat under the
+SIL Open Font License, the entity tables come from AD1C's `cty.csv`, and the
+coastlines are Natural Earth. Stamping them with the project's own licence would
+be claiming ownership of someone else's work. Every hand-written file does carry
+the header.
+
 ## The privacy rule
 
 The operator's callsign must never reach any network service. This is not

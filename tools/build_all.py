@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE.
 """Build the firmware for every supported board, into separate directories.
 
 Each board gets its own build tree and its own sdkconfig, because they are not

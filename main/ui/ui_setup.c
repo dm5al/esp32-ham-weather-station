@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE. */
 /*
  * Commissioning assistant.
  *
@@ -398,14 +400,16 @@ static void on_ap_clicked(lv_event_t *e)
 
     ui_label(s_body, &lv_font_ui_20, t->text, 20, 8, T(S_PASSWORD_FOR));
     ui_label(s_body, &lv_font_ui_20, t->accent, 210, 8, s_pending_ssid);
-    s_pass_ta = make_textarea(s_body, 20, 40, 640, T(S_NET_PASSWORD), WIFI_MGR_PASS_MAX, true);
+    /* 496 wide, not 640: the field used to run to x=660 with Cancel starting at
+     * 560, so the button sat on top of the text being typed. */
+    s_pass_ta = make_textarea(s_body, 20, 40, 496, T(S_NET_PASSWORD), WIFI_MGR_PASS_MAX, true);
 
-    lv_obj_t *back = ui_button(s_body, 560, 40, 106, 48, on_pass_cancel);
+    lv_obj_t *back = ui_button(s_body, 528, 40, 120, 48, on_pass_cancel);
     lv_obj_set_style_bg_color(back, t->card_hi, 0);
     lv_obj_t *bl = ui_label(back, &lv_font_ui_18, t->text, 0, 0, T(S_CANCEL));
     lv_obj_center(bl);
 
-    lv_obj_t *btn = ui_button(s_body, 674, 40, 106, 48, on_connect);
+    lv_obj_t *btn = ui_button(s_body, 660, 40, 120, 48, on_connect);
     lv_obj_set_style_bg_color(btn, t->accent, 0);
     lv_obj_t *l = ui_label(btn, &lv_font_ui_18, t->bg, 0, 0, T(S_CONNECT));
     lv_obj_center(l);
@@ -530,8 +534,28 @@ static void on_field_focus(lv_event_t *e)
  * The suppression flag matters: lv_textarea_delete_char() raises its own
  * VALUE_CHANGED, and re-entering here is exactly the mistake that caused the
  * problem in the first place.
+ *
+ * s_programmatic matters for the same reason and cost a bug of its own. Once a
+ * text area has accepted_chars set, lv_textarea_set_text() does not assign the
+ * label in one go — it clears it and replays the string a character at a time
+ * through lv_textarea_add_char(), each raising VALUE_CHANGED. Every one of
+ * those lands in the same millisecond, so the rule below saw a whole prefill as
+ * a burst of duplicates and deleted all but the first character: opening
+ * Settings > Station > Edit showed "D", "U" and "J" instead of the callsign,
+ * QTH and locator. Machine-written text is never a double tap.
  */
 #define DEDUP_WINDOW_MS 60
+
+static bool s_programmatic;
+
+/* Prefill a field without the dedup rule mistaking the replayed characters for
+ * double dispatches. */
+static void set_field_text(lv_obj_t *ta, const char *txt)
+{
+    s_programmatic = true;
+    lv_textarea_set_text(ta, txt);
+    s_programmatic = false;
+}
 
 static void on_field_changed(lv_event_t *e)
 {
@@ -540,7 +564,7 @@ static void on_field_changed(lv_event_t *e)
     static bool s_undoing;
 
     lv_obj_t *ta = lv_event_get_target(e);
-    if (s_undoing) {
+    if (s_undoing || s_programmatic) {
         return;
     }
 
@@ -628,9 +652,9 @@ static void build_station_step(void)
     /* Prefill when re-running commissioning from Settings. */
     const station_t *st = station_get();
     if (st->configured) {
-        lv_textarea_set_text(s_call_ta, st->call);
-        lv_textarea_set_text(s_qth_ta, st->qth);
-        lv_textarea_set_text(s_loc_ta, st->locator);
+        set_field_text(s_call_ta, st->call);
+        set_field_text(s_qth_ta, st->qth);
+        set_field_text(s_loc_ta, st->locator);
     }
 
     s_kb = lv_keyboard_create(s_body);

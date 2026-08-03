@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE. */
 #include "bsp/lcd_console.h"
 
 #include <stdio.h>
@@ -360,6 +362,46 @@ static int cmd_map(int argc, char **argv)
 }
 
 /*
+ * Navigate, so a screenshot can be taken of a page without reaching for the
+ * panel. The map has its own command because it needs a band and a projection.
+ */
+static int cmd_page(int argc, char **argv)
+{
+    if (argc < 2) {
+        printf("Usage: page home|dx|settings\n");
+        return 1;
+    }
+    if (!bsp_display_lock(2000)) {
+        printf("Could not take the display lock.\n");
+        return 1;
+    }
+    if (strcmp(argv[1], "home") == 0) {
+        ui_show_home();
+    } else if (strcmp(argv[1], "dx") == 0) {
+        ui_show_dx();
+    } else if (strcmp(argv[1], "settings") == 0) {
+        ui_show_settings();
+    } else if (strcmp(argv[1], "station") == 0) {
+        ui_show_station_setup();
+    } else if (strcmp(argv[1], "wifi") == 0) {
+        ui_show_wifi_setup();
+    } else if (strcmp(argv[1], "about") == 0) {
+        /* A sheet rather than a screen, and it can only exist on top of
+         * Settings, so bring that up first. */
+        ui_show_settings();
+        ui_settings_open_about();
+    } else {
+        bsp_display_unlock();
+        printf("Unknown page '%s'. Try home, dx, settings, station, wifi or about.\n",
+               argv[1]);
+        return 1;
+    }
+    bsp_display_unlock();
+    printf("Showing %s.\n", argv[1]);
+    return 0;
+}
+
+/*
  * Dump the frame buffer as a screenshot.
  *
  * A photograph of an LCD is never square-on, never colour-accurate and always
@@ -385,9 +427,20 @@ static int cmd_shot(int argc, char **argv)
         printf("Could not take the display lock.\n");
         return 1;
     }
-    /* Force a full repaint so neither buffer is caught half-drawn. */
-    lv_obj_invalidate(lv_screen_active());
-    lv_refr_now(NULL);
+    /*
+     * Repaint twice.
+     *
+     * There are two frame buffers and LVGL alternates between them, so one
+     * full redraw fills whichever is currently the back buffer and leaves the
+     * other holding whatever it last had. Reading a fixed buffer after a single
+     * refresh therefore captures a screen that is part current and part
+     * stale — a correct header over an empty body, in the case that found this.
+     * A second round paints the other one.
+     */
+    for (int pass = 0; pass < 2; pass++) {
+        lv_obj_invalidate(lv_screen_active());
+        lv_refr_now(NULL);
+    }
     const uint16_t *fb = bsp_display_framebuffer();
     bsp_display_unlock();
 
@@ -480,6 +533,14 @@ esp_err_t lcd_console_start(void)
         .func = cmd_map,
     };
     ESP_ERROR_CHECK(esp_console_cmd_register(&map_cmd));
+
+    const esp_console_cmd_t page_cmd = {
+        .command = "page",
+        .help = "Show a page: home, dx, settings, station or wifi",
+        .hint = "<home|dx|settings|station|wifi>",
+        .func = cmd_page,
+    };
+    ESP_ERROR_CHECK(esp_console_cmd_register(&page_cmd));
 
     const esp_console_cmd_t shot_cmd = {
         .command = "shot",

@@ -138,8 +138,8 @@ the original authors:
     Dmitriy Aleksandrov, DM5AL
     Developed with Claude Opus 5 (Anthropic)
 
-In firmware builds this credit appears on the Settings screen and
-must not be removed.
+In firmware builds this credit appears on the device's About screen
+and must not be removed.
 
 
 ================================================================
@@ -161,6 +161,26 @@ actual intent precisely: the source is public, anyone may read,
 build, modify and share it, hobby and club and educational use is
 unrestricted, and selling it is not permitted.
 
+GPL-3.0 was considered seriously and rejected, and the reason is
+specific rather than ideological. Copyleft prevents a derivative
+being made proprietary; it does not prevent one being sold. A
+manufacturer may build this by the thousand, publish the source to
+comply, and be entirely within the license.
+
+That outcome is the one to avoid here, because of what this device
+runs on. Every number it displays comes from a service that is
+free, anonymous and largely volunteer-maintained: NOAA SWPC,
+wspr.live, prop.kc2g.com, Open-Meteo, HamQTH, DXWatch, AD1C's
+cty.csv. Those services carry the cost of every unit ever built.
+One hobbyist's station is a rounding error to them. A commercial
+production run is not, and it would be their bandwidth subsidising
+someone else's margin.
+
+So the restriction is not about protecting the author's revenue —
+there is none, and there is not meant to be. It is about not
+turning other people's generosity into a supply chain.
+
 If open source in the formal sense is ever wanted instead, the
 usual choices are MIT or Apache-2.0 — but both permit commercial
-use, which is the thing this license exists to prevent.
+use, and so does the GPL. All three permit exactly the thing this
+license exists to prevent.

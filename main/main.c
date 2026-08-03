@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE. */
 /*
  * Ham Weather Station - Waveshare ESP32-S3-Touch-LCD-7.
  *
@@ -174,13 +176,34 @@ static void do_refresh(void)
         any = true;
     }
     prop_fetch_muf(st->pos, &s_muf);
-    weather_fetch(st->pos, &s_wx);
+
+    /*
+     * Weather reaches the UI only once it has actually arrived.
+     *
+     * The return value used to be discarded, so a failed fetch left the struct
+     * zeroed and the home screen reported 0 °C, 0 hPa and 0 % — presenting a
+     * value it did not have, which is the one thing this project is not
+     * supposed to do. It also zeroed the UTC offset, which quietly made the
+     * local clock read identically to UTC.
+     *
+     * A failure now leaves the last good reading on screen, or the placeholders
+     * if there has never been one.
+     */
+    static bool wx_ok;
+    if (weather_fetch(st->pos, &s_wx) == ESP_OK) {
+        wx_ok = true;
+        any = true;
+    } else {
+        ESP_LOGW(TAG, "weather fetch failed; keeping the previous reading");
+    }
 
     if (bsp_display_lock(0)) {
         ui_set_spacewx(&s_sw);
         ui_set_bands(s_bands);
         ui_set_muf(&s_muf);
-        ui_set_weather(&s_wx);
+        if (wx_ok) {
+            ui_set_weather(&s_wx);
+        }
         bsp_display_unlock();
     }
 

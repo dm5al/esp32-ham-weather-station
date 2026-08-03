@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE.
 """Ranked most-wanted DXCC entities, scraped from dxnews.
 
 Kept in its own module so the regular expressions live in a file written as a

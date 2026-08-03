@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE. */
 #include "lib/i18n.h"
 
 /*
@@ -102,7 +104,7 @@ static const char *const k_str[S_COUNT][LANG_COUNT] = {
     [S_MUF_NA]           = {"MUF unavailable", "MUF nicht verfügbar", "MUF недоступна",
                             "MUF indisponible", "MUF non disponibile", "MUF no disponible"},
     [S_NEAREST_IONOSONDE] = {"Nearest ionosonde:", "Nächste Ionosonde:",
-                             "Ближайшая ионосонда:", "Ionosonde la plus proche :",
+                             "Ближайший ионосферный зонд:", "Ionosonde la plus proche :",
                              "Ionosonda più vicina:", "Ionosonda más cercana:"},
     [S_SNR]              = {"SIGNAL-TO-NOISE", "SIGNAL-RAUSCH", "СИГНАЛ/ШУМ",
                             "SIGNAL/BRUIT", "SEGNALE/RUMORE", "SEÑAL/RUIDO"},
@@ -162,8 +164,9 @@ static const char *const k_str[S_COUNT][LANG_COUNT] = {
                             "très recherché, sur le cluster",
                             "molto ricercato, ora sul cluster",
                             "muy buscado, ahora en el clúster"},
-    [S_ALL_QUIET]        = {"All quiet", "Alles ruhig", "Всё спокойно", "Tout est calme",
-                            "Tutto tranquillo", "Todo tranquilo"},
+    [S_ALL_QUIET]        = {"No new events", "Keine neuen Ereignisse", "Нет новых событий",
+                            "Aucun événement nouveau", "Nessun evento nuovo",
+                            "Sin eventos nuevos"},
 
     [S_CHANGE]           = {"Change", "Ändern", "Изменить", "Modifier", "Cambia",
                             "Cambiar"},
@@ -208,12 +211,21 @@ static const char *const k_str[S_COUNT][LANG_COUNT] = {
     [S_UNITS]            = {"UNITS AND FORMATS", "EINHEITEN UND FORMATE",
                             "ЕДИНИЦЫ И ФОРМАТЫ", "UNITÉS ET FORMATS", "UNITÀ E FORMATI",
                             "UNIDADES Y FORMATOS"},
-    [S_PRIVACY]          = {"No private data such as your callsign is shared with web services.",
-                            "Keine privaten Daten wie das Rufzeichen gehen an Webdienste.",
-                            "Личные данные, включая позывной, не передаются веб-сервисам.",
-                            "Aucune donnée privée, dont l'indicatif, n'est transmise.",
-                            "Nessun dato privato, incluso il nominativo, viene inviato.",
-                            "Ningún dato privado, incluido el indicativo, se comparte."},
+    /*
+     * Narrowed from "no private data is shared", which was not quite true and
+     * would have been the kind of overclaim this project exists not to make:
+     * Open-Meteo does receive coordinates. What is unconditionally true is that
+     * no callsign and no account ever reach any of these services, and that is
+     * now all this line says. About states the rest in full.
+     */
+    [S_PRIVACY]          = {"No callsign and no account are used with any of them. "
+                            "See About.",
+                            "Kein Rufzeichen und kein Konto werden dabei verwendet. "
+                            "Siehe Über.",
+                            "Позывной и учётные записи не используются. См. «О программе».",
+                            "Aucun indicatif ni compte n'est utilisé. Voir À propos.",
+                            "Nessun nominativo o account viene utilizzato. Vedi Info.",
+                            "No se usa indicativo ni cuenta. Véase Acerca de."},
     [S_AUTO_SWITCH]      = {"SWITCH PAGES AUTOMATICALLY", "SEITEN AUTOMATISCH WECHSELN",
                             "АВТОСМЕНА СТРАНИЦ", "CHANGER DE PAGE AUTOMATIQUEMENT",
                             "CAMBIO PAGINA AUTOMATICO", "CAMBIO DE PÁGINA AUTOMÁTICO"},
@@ -222,6 +234,72 @@ static const char *const k_str[S_COUNT][LANG_COUNT] = {
     [S_TAP_EDIT]         = {"tap Edit to commission", "zum Einrichten Ändern antippen",
                             "нажмите «Изменить»", "toucher Modifier", "tocca Modifica",
                             "toca Editar"},
+    /* About sheet headings. The body under them — the author's name, the address
+     * and the licence — is deliberately not translated: a name is a name, and a
+     * licence paraphrased into six languages is six chances to state its terms
+     * wrongly. Only the labels change. */
+    [S_AUTHOR]           = {"AUTHOR", "AUTOR", "АВТОР", "AUTEUR", "AUTORE", "AUTOR"},
+    [S_LICENCE]          = {"LICENCE", "LIZENZ", "ЛИЦЕНЗИЯ", "LICENCE", "LICENZA",
+                            "LICENCIA"},
+    [S_SOURCES]          = {"DATA SOURCES", "DATENQUELLEN", "ИСТОЧНИКИ ДАННЫХ",
+                            "SOURCES DE DONNÉES", "FONTI DEI DATI",
+                            "FUENTES DE DATOS"},
+    /* Shown on the map between tapping a band and its receptions arriving.
+     * "Measuring", not "loading": the wait is real observation time, and the
+     * word keeps the promise the whole page makes. */
+    [S_MEASURING]        = {"measuring...", "messe...", "измерение...", "mesure...",
+                            "misurazione...", "midiendo..."},
+    [S_CONTACT]          = {"CONTACT", "KONTAKT", "КОНТАКТ", "CONTACT", "CONTATTO",
+                            "CONTACTO"},
+    [S_PRIVACY_TITLE]    = {"PRIVACY", "DATENSCHUTZ", "КОНФИДЕНЦИАЛЬНОСТЬ",
+                            "CONFIDENTIALITÉ", "PRIVACY", "PRIVACIDAD"},
+    [S_FIRMWARE_VER]     = {"FIRMWARE VERSION", "FIRMWARE-VERSION", "ВЕРСИЯ ПРОШИВКИ",
+                            "VERSION DU MICROLOGICIEL", "VERSIONE FIRMWARE",
+                            "VERSIÓN DEL FIRMWARE"},
+    [S_COMPONENTS]       = {"COMPONENTS AND LIBRARIES", "KOMPONENTEN UND BIBLIOTHEKEN",
+                            "КОМПОНЕНТЫ И БИБЛИОТЕКИ", "COMPOSANTS ET BIBLIOTHÈQUES",
+                            "COMPONENTI E LIBRERIE", "COMPONENTES Y BIBLIOTECAS"},
+    /* Settings footer. Two sentences doing different jobs: the first names every
+     * service contacted, the second states precisely what leaves the device. */
+    [S_SERVICES_USED]    = {"The following web services are used:",
+                            "Folgende Webdienste werden genutzt:",
+                            "Используются следующие веб-сервисы:",
+                            "Les services web suivants sont utilisés :",
+                            "Vengono utilizzati i seguenti servizi web:",
+                            "Se utilizan los siguientes servicios web:"},
+    /*
+     * The honest version of "no private data is shared".
+     *
+     * The callsign never leaves the device and no account exists anywhere, but
+     * Open-Meteo does receive coordinates: a forecast for the whole 1000 km
+     * Maidenhead field would be useless, so the position derived from the full
+     * locator is sent, which places the station within about 2.5 km. Saying
+     * "no private data" without qualifying that would overstate the case.
+     */
+    [S_PRIVACY_WEATHER]  = {"No callsign or personal data is transmitted. An anonymous "
+                            "position accurate to approximately 2.5 km, derived from the "
+                            "configured locator, is sent solely to obtain the local weather "
+                            "forecast.",
+                            "Es werden weder Rufzeichen noch persönliche Daten übertragen. "
+                            "Eine anonyme Position mit einer Genauigkeit von etwa 2,5 km, "
+                            "abgeleitet aus dem eingestellten Locator, wird ausschließlich "
+                            "zum Abruf der lokalen Wettervorhersage übermittelt.",
+                            "Позывной и личные данные не передаются. Анонимные координаты "
+                            "с точностью около 2,5 км, полученные из заданного локатора, "
+                            "передаются исключительно для получения местного прогноза "
+                            "погоды.",
+                            "Aucun indicatif ni donnée personnelle n'est transmis. Une "
+                            "position anonyme précise à environ 2,5 km, dérivée du locator "
+                            "configuré, est envoyée uniquement pour obtenir les prévisions "
+                            "météorologiques locales.",
+                            "Non viene trasmesso alcun nominativo o dato personale. Una "
+                            "posizione anonima con precisione di circa 2,5 km, derivata dal "
+                            "locatore configurato, viene inviata unicamente per ottenere le "
+                            "previsioni meteorologiche locali.",
+                            "No se transmite ningún indicativo ni dato personal. Se envía "
+                            "una posición anónima con una precisión de unos 2,5 km, derivada "
+                            "del localizador configurado, únicamente para obtener la "
+                            "previsión meteorológica local."},
 
     /* ---- commissioning ---- */
     [S_STEP_FORMAT]      = {"Language", "Sprache", "Язык", "Langue", "Lingua", "Idioma"},

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE. */
 #include "net/dxcluster.h"
 
 #include <ctype.h>
@@ -159,9 +161,19 @@ static void infer_mode(dx_spot_t *s, const char *published)
 {
     static const char *const k_modes[] = {"FT8", "FT4", "CW", "SSB", "RTTY", "PSK",
                                           "JT65", "MSK", "SSTV", "AM", "FM"};
-    if (published && published[0] && strlen(published) <= 4) {
-        strlcpy(s->mode, published, sizeof(s->mode));
-        return;
+    /*
+     * The published column is trusted only when it names a mode we recognise.
+     * HamQTH puts a bare "E" in it on many records; whatever that flag means it
+     * is not a mode, and passing it through put a column of "E" on screen where
+     * CW or SSB belonged.
+     */
+    if (published && published[0]) {
+        for (size_t i = 0; i < sizeof(k_modes) / sizeof(k_modes[0]); i++) {
+            if (strcmp(published, k_modes[i]) == 0) {
+                strlcpy(s->mode, k_modes[i], sizeof(s->mode));
+                return;
+            }
+        }
     }
     for (size_t i = 0; i < sizeof(k_modes) / sizeof(k_modes[0]); i++) {
         if (contains_ci(s->comment, k_modes[i])) {
@@ -169,12 +181,49 @@ static void infer_mode(dx_spot_t *s, const char *published)
             return;
         }
     }
-    /* Digital sub-bands sit just above the CW segment on every HF band; the
-     * common FT8 watering holes are close enough to identify by frequency. */
-    int khz = (int)s->freq_khz;
+    /*
+     * Fall back to the band plan.
+     *
+     * Only the exact FT8 watering holes used to be recognised, so most spots
+     * showed nothing at all. The IARU segment boundaries are a regulated
+     * convention that essentially everyone follows, which makes them a sound
+     * basis for a guess: below the CW/data boundary it is CW, between that and
+     * the phone boundary it is a digital mode, above it is voice.
+     *
+     * This is inference, not fact — a rag-chew a few kHz outside its segment
+     * will be labelled wrongly. It is still far better than a blank column, and
+     * the exact FT8 frequencies below are checked first because those are as
+     * near certain as this gets.
+     */
+    const int khz = (int)s->freq_khz;
     if (khz == 14074 || khz == 7074 || khz == 10136 || khz == 18100 || khz == 21074 ||
         khz == 24915 || khz == 28074 || khz == 3573 || khz == 50313 || khz == 144174) {
         strlcpy(s->mode, "FT8", sizeof(s->mode));
+        return;
+    }
+
+    /* low edge, end of CW, end of digital — all kHz, IARU Region 1. */
+    static const struct { int lo, cw, digi, hi; } k_plan[] = {
+        {  1810,   1838,   1843,   2000},   /* 160m */
+        {  3500,   3570,   3600,   3800},   /* 80m  */
+        {  7000,   7040,   7050,   7200},   /* 40m  */
+        { 10100,  10130,  10150,  10150},   /* 30m, no phone */
+        { 14000,  14070,  14099,  14350},   /* 20m  */
+        { 18068,  18095,  18109,  18168},   /* 17m  */
+        { 21000,  21070,  21110,  21450},   /* 15m  */
+        { 24890,  24915,  24929,  24990},   /* 12m  */
+        { 28000,  28070,  28190,  29700},   /* 10m  */
+        { 50000,  50100,  50500,  52000},   /* 6m   */
+        {144000, 144150, 144400, 148000},   /* 2m   */
+    };
+    for (size_t i = 0; i < sizeof(k_plan) / sizeof(k_plan[0]); i++) {
+        if (khz < k_plan[i].lo || khz > k_plan[i].hi) {
+            continue;
+        }
+        const char *m = (khz <= k_plan[i].cw)   ? "CW"
+                        : (khz <= k_plan[i].digi) ? "digi"
+                                                  : "SSB";
+        strlcpy(s->mode, m, sizeof(s->mode));
         return;
     }
     s->mode[0] = '\0';
@@ -344,11 +393,13 @@ static bool accept(dx_feed_t *f, dx_spot_t *s, dx_source_t src)
         s->dxcc = (uint16_t)dxcc_from_callsign(s->dx);
     }
     if (s->dxcc > 0) {
-        if (s->country[0] == '\0') {
-            const char *n = dxcc_name(s->dxcc);
-            if (n) {
-                strlcpy(s->country, n, sizeof(s->country));
-            }
+        /* Our table wins over whatever the feed called it, even when the feed
+         * supplied a name. One entity then reads the same whichever service
+         * reported it, and the names are the shortened ones chosen to fit the
+         * column — "UAE", not "United Arab Emirates" clipped mid-word. */
+        const char *n = dxcc_name(s->dxcc);
+        if (n) {
+            strlcpy(s->country, n, sizeof(s->country));
         }
         if (s->continent[0] == '\0') {
             const char *c = dxcc_continent(s->dxcc);

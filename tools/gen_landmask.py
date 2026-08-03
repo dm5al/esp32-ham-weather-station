@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE.
 """Rasterise Natural Earth land polygons into a 1-bit land/sea mask.
 
 Drawing the map from vector polygons needed fan triangulation, which LVGL's

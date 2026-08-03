@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE. */
 /*
  * Propagation map for one band.
  *
@@ -97,6 +99,8 @@ typedef struct {
 } proj_t;
 
 static proj_t s_proj;
+
+static void paint_projection_buttons(void);
 
 /*
  * All coordinates are CANVAS-LOCAL: 0..MAP_W by 0..MAP_H. The canvas is placed
@@ -585,6 +589,11 @@ static void redraw(void)
 
     lv_canvas_finish_layer(s_canvas, &layer);
     place_bearing_labels();
+    /* Keep the button pair agreeing with the projection actually drawn.
+     * They used to be repainted only by their own click handler, so any
+     * other route to a projection change left the wrong one highlighted
+     * over the right map. */
+    paint_projection_buttons();
 }
 
 /* ---- projection buttons -------------------------------------------------- */
@@ -755,8 +764,32 @@ void ui_map_set_band(int band_index)
     if (!b || !s_scr) {
         return;
     }
+    bool changed = (band_index != s_band_index);
     s_band_index = band_index;
     lv_label_set_text_fmt(s_title, T(S_PROPAGATION), b->name);
+
+    /*
+     * Drop the old band's data at the same moment as the old band's name.
+     *
+     * Fetching the new band takes a few seconds, and this used to relabel the
+     * title and nothing else — so the map kept painting the previous band's
+     * receptions and its MUF under the new heading. That is not stale data, it
+     * is wrong data presented as current: 20 m openings read as 40 m by anyone
+     * who looked during those seconds, which is exactly the mistake a
+     * propagation display exists to prevent.
+     *
+     * An empty map with "measuring" under it says the true thing, and the wait
+     * is short.
+     */
+    if (changed) {
+        s_spot_count = 0;
+        s_muf_data = (prop_muf_t){0};
+        lv_label_set_text(s_count, T(S_MEASURING));
+        lv_label_set_text(s_far, "");
+        lv_label_set_text(s_muf, "");
+        lv_label_set_text(s_iono, "");
+        redraw();
+    }
 }
 
 void ui_map_set_spots(const prop_spot_t *spots, int count, const prop_muf_t *muf)

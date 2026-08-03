@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+/* Copyright (C) 2026 Dmitriy Aleksandrov, DM5AL. See LICENSE. */
 /*
  * Per-board wiring.
  *
@@ -88,11 +90,21 @@
  *
  * The cost is bus bandwidth — 24 MHz is 48 MB/s out of PSRAM against the
  * Waveshare's 42 — which is the thing that starves the bounce buffers and makes
- * the picture tremble. If that returns, the levers in order are "lcd set pclk
- * 21" (47 Hz) or "lcd set bblines 20" for more refill margin.
+ * the picture tremble.
+ *
+ * 24 MHz turned out to be over the line, and the symptom was not a tremble but
+ * a DMA resync: press a button, the repaint blits into the PSRAM frame buffer,
+ * the bounce buffers lose the race and the scan shifts — permanently, because
+ * once the RGB DMA is out of step nothing puts it back before a restart. That is
+ * why it looked like it "came and went": every reboot cleared it.
+ *
+ * So this sits at 21 MHz, the same 42 MB/s the Waveshare has always run at
+ * without trouble. It costs refresh rate — 46 Hz against 53 — and that is the
+ * cheaper thing to give up. The remaining lever is "lcd set bblines 20" for more
+ * refill margin, at 25 KB of internal RAM that TLS would rather have.
  */
 #define LCD_CLK_SOURCE LCD_CLK_SRC_PLL240M
-#define LCD_DEFAULT_PCLK_MHZ 24
+#define LCD_DEFAULT_PCLK_MHZ 21
 #define LCD_DEFAULT_HPW  7
 #define LCD_DEFAULT_HBP  40
 #define LCD_DEFAULT_HFP  40
